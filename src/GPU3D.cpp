@@ -19,6 +19,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <algorithm>
+#include <immintrin.h>
 #include "NDS.h"
 #include "GPU.h"
 #include "FIFO.h"
@@ -661,7 +662,7 @@ void MatrixLoad4x3(s32* m, s32* s)
     m[12] = s[9]; m[13] = s[10]; m[14] = s[11]; m[15] = 0x1000;
 }
 
-void MatrixMult4x4(s32* m, s32* s, s32* t)
+/*void MatrixMult4x4(s32* m, s32* s, s32* t)
 {
 
     // m = s*m
@@ -684,9 +685,45 @@ void MatrixMult4x4(s32* m, s32* s, s32* t)
     m[13] = ((s64)s[12]*t[1] + (s64)s[13]*t[5] + (s64)s[14]*t[9] + (s64)s[15]*t[13]) >> 12;
     m[14] = ((s64)s[12]*t[2] + (s64)s[13]*t[6] + (s64)s[14]*t[10] + (s64)s[15]*t[14]) >> 12;
     m[15] = ((s64)s[12]*t[3] + (s64)s[13]*t[7] + (s64)s[14]*t[11] + (s64)s[15]*t[15]) >> 12;
+}*/
+
+void MatrixMult4x4(s32* m, s32* s, s32* t)
+{
+    __m256i b1{t[3], t[2], t[1], t[0]};
+    __m256i b2{t[7], t[6], t[5], t[4]};
+    __m256i b3{t[11], t[10], t[9], t[8]};
+    __m256i b4{t[15], t[14], t[13], t[12]};
+
+    __m256i acc1 = s[0]*b1 + s[1]*b2 + s[2]*b3 + s[3]*b4;
+    acc1 = _mm256_srli_epi64(acc1, 12);
+    __m256i acc2 = s[4]*b1 + s[5]*b2 + s[6]*b3 + s[7]*b4;
+    acc2 = _mm256_srli_epi64(acc2, 12);
+    __m256i acc3 = s[8]*b1 + s[9]*b2 + s[10]*b3 + s[11]*b4;
+    acc3 = _mm256_srli_epi64(acc3, 12);
+    __m256i acc4 = s[12]*b1 + s[13]*b2 + s[14]*b3 + s[15]*b4;
+    acc4 = _mm256_srli_epi64(acc4, 12);
+    m[0] = acc1[3];
+    m[1] = acc1[2];
+    m[2] = acc1[1];
+    m[3] = acc1[0];
+
+    m[4] = acc2[3];
+    m[5] = acc2[2];
+    m[6] = acc2[1];
+    m[7] = acc2[0];
+
+    m[8] = acc3[3];
+    m[9] = acc3[2];
+    m[10] = acc3[1];
+    m[11] = acc3[0];
+
+    m[12] = acc4[3];
+    m[13] = acc4[2];
+    m[14] = acc4[1];
+    m[15] = acc4[0];
 }
 
-void MatrixMult4x3(s32* m, s32* s)
+/*void MatrixMult4x3(s32* m, s32* s)
 {
     s32 tmp[16];
     memcpy(tmp, m, 16*4);
@@ -711,9 +748,45 @@ void MatrixMult4x3(s32* m, s32* s)
     m[13] = ((s64)s[9]*tmp[1] + (s64)s[10]*tmp[5] + (s64)s[11]*tmp[9] + (s64)0x1000*tmp[13]) >> 12;
     m[14] = ((s64)s[9]*tmp[2] + (s64)s[10]*tmp[6] + (s64)s[11]*tmp[10] + (s64)0x1000*tmp[14]) >> 12;
     m[15] = ((s64)s[9]*tmp[3] + (s64)s[10]*tmp[7] + (s64)s[11]*tmp[11] + (s64)0x1000*tmp[15]) >> 12;
+}*/
+
+void MatrixMult4x3(s32* m, s32* s)
+{
+    __m256i b1{m[3], m[2], m[1], m[0]};
+    __m256i b2{m[7], m[6], m[5], m[4]};
+    __m256i b3{m[11], m[10], m[9], m[8]};
+    __m256i b4{m[15], m[14], m[13], m[12]};
+
+    __m256i acc1 = s[0]*b1 + s[1]*b2 + s[2]*b3;
+    acc1 = _mm256_srli_epi64(acc1, 12);
+    __m256i acc2 = s[3]*b1 + s[4]*b2 + s[5]*b3;
+    acc2 = _mm256_srli_epi64(acc2, 12);
+    __m256i acc3 = s[6]*b1 + s[7]*b2 + s[8]*b3;
+    acc3 = _mm256_srli_epi64(acc3, 12);
+    __m256i acc4 = s[9]*b1 + s[10]*b2 + s[11]*b3 + 0x1000*b4;
+    acc4 = _mm256_srli_epi64(acc4, 12);
+    m[0] = acc1[3];
+    m[1] = acc1[2];
+    m[2] = acc1[1];
+    m[3] = acc1[0];
+
+    m[4] = acc2[3];
+    m[5] = acc2[2];
+    m[6] = acc2[1];
+    m[7] = acc2[0];
+
+    m[8] = acc3[3];
+    m[9] = acc3[2];
+    m[10] = acc3[1];
+    m[11] = acc3[0];
+
+    m[12] = acc4[3];
+    m[13] = acc4[2];
+    m[14] = acc4[1];
+    m[15] = acc4[0];
 }
 
-void MatrixMult3x3(s32* m, s32* s)
+/*void MatrixMult3x3(s32* m, s32* s)
 {
     s32 tmp[12];
     memcpy(tmp, m, 12*4);
@@ -733,6 +806,34 @@ void MatrixMult3x3(s32* m, s32* s)
     m[9] = ((s64)s[6]*tmp[1] + (s64)s[7]*tmp[5] + (s64)s[8]*tmp[9]) >> 12;
     m[10] = ((s64)s[6]*tmp[2] + (s64)s[7]*tmp[6] + (s64)s[8]*tmp[10]) >> 12;
     m[11] = ((s64)s[6]*tmp[3] + (s64)s[7]*tmp[7] + (s64)s[8]*tmp[11]) >> 12;
+}*/
+
+void MatrixMult3x3(s32* m, s32* s)
+{
+    __m256i b1{m[3], m[2], m[1], m[0]};
+    __m256i b2{m[7], m[6], m[5], m[4]};
+    __m256i b3{m[11], m[10], m[9], m[8]};
+
+    __m256i acc1 = s[0]*b1 + s[1]*b2 + s[2]*b3;
+    acc1 = _mm256_srli_epi64(acc1, 12);
+    __m256i acc2 = s[3]*b1 + s[4]*b2 + s[5]*b3;
+    acc2 = _mm256_srli_epi64(acc2, 12);
+    __m256i acc3 = s[6]*b1 + s[7]*b2 + s[8]*b3;
+    acc3 = _mm256_srli_epi64(acc3, 12);
+    m[0] = acc1[3];
+    m[1] = acc1[2];
+    m[2] = acc1[1];
+    m[3] = acc1[0];
+
+    m[4] = acc2[3];
+    m[5] = acc2[2];
+    m[6] = acc2[1];
+    m[7] = acc2[0];
+
+    m[8] = acc3[3];
+    m[9] = acc3[2];
+    m[10] = acc3[1];
+    m[11] = acc3[0];
 }
 
 void MatrixScale(s32* m, s32* s)
@@ -753,12 +854,41 @@ void MatrixScale(s32* m, s32* s)
     m[11] = ((s64)s[2]*m[11]) >> 12;
 }
 
-void MatrixTranslate(s32* m, s32* s)
+/*void MatrixTranslate(s32* m, s32* s)
 {
     m[12] += ((s64)s[0]*m[0] + (s64)s[1]*m[4] + (s64)s[2]*m[8]) >> 12;
     m[13] += ((s64)s[0]*m[1] + (s64)s[1]*m[5] + (s64)s[2]*m[9]) >> 12;
     m[14] += ((s64)s[0]*m[2] + (s64)s[1]*m[6] + (s64)s[2]*m[10]) >> 12;
     m[15] += ((s64)s[0]*m[3] + (s64)s[1]*m[7] + (s64)s[2]*m[11]) >> 12;
+}*/
+
+/*void MatrixScale(s32* m, s32* s)
+{
+    __m128i b1 = _mm_load_si128((__m128i*)m);
+    __m128i b2 = _mm_load_si128((__m128i*)(m + 4));
+    __m128i b3 = _mm_load_si128((__m128i*)(m + 8));
+    b1 *= s[0];
+    b1 = _mm_srli_epi32(b1, 12);
+    b2 *= s[1];
+    b2 = _mm_srli_epi32(b2, 12);
+    b3 *= s[2];
+    b3 = _mm_srli_epi32(b3, 12);
+
+    _mm_storeu_si128((__m128i*)(m), b1);
+    _mm_storeu_si128((__m128i*)(m + 4), b2);
+    _mm_storeu_si128((__m128i*)(m + 8), b3);
+}*/
+
+void MatrixTranslate(s32* m, s32* s)
+{
+    __m128i b1 = _mm_load_si128((__m128i*)m);
+    __m128i b2 = _mm_load_si128((__m128i*)(m + 4));
+    __m128i b3 = _mm_load_si128((__m128i*)(m + 8));
+
+    __m128i acc1 = s[0]*b1 + s[1]*b2 + s[2]*b3;
+    acc1 = _mm_srli_epi32(acc1, 12);
+
+    _mm_store_si128((__m128i*)(m+12), acc1);
 }
 
 void UpdateClipMatrix()

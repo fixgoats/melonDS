@@ -689,38 +689,64 @@ void MatrixLoad4x3(s32* m, s32* s)
 
 void MatrixMult4x4(s32* m, s32* s, s32* t)
 {
-    __m256i b1{t[3], t[2], t[1], t[0]};
-    __m256i b2{t[7], t[6], t[5], t[4]};
-    __m256i b3{t[11], t[10], t[9], t[8]};
-    __m256i b4{t[15], t[14], t[13], t[12]};
+    __m256i b1 = _mm256_i32gather_epi32(t, _mm256_set_epi32(7*4, 3*4, 6*4, 2*4, 5*4, 1*4, 4*4, 0), 1);
+    __m256i b2 = _mm256_permutevar8x32_epi32(b1, _mm256_set_epi32(6, 7, 4, 5, 2, 3, 0, 1));
+    __m256i b3 = _mm256_i32gather_epi32(t + 8, _mm256_set_epi32(7*4, 3*4, 6*4, 2*4, 5*4, 1*4, 4*4, 0), 1);
+    __m256i b4 = _mm256_permutevar8x32_epi32(b3, _mm256_set_epi32(6, 7, 4, 5, 2, 3, 0, 1));
 
-    __m256i acc1 = s[0]*b1 + s[1]*b2 + s[2]*b3 + s[3]*b4;
+    __m256i a1 = _mm256_set1_epi32(s[0]);
+    __m256i a2 = _mm256_set1_epi32(s[1]);
+    __m256i a3 = _mm256_set1_epi32(s[2]);
+    __m256i a4 = _mm256_set1_epi32(s[3]);
+
+    __m256i acc1 = _mm256_mul_epi32(a1, b1);
+    acc1 += _mm256_mul_epi32(a2, b2);
+    acc1 += _mm256_mul_epi32(a3, b3);
+    acc1 += _mm256_mul_epi32(a4, b4);
     acc1 = _mm256_srli_epi64(acc1, 12);
-    __m256i acc2 = s[4]*b1 + s[5]*b2 + s[6]*b3 + s[7]*b4;
+
+    m[0] = acc1[0];
+    m[1] = acc1[1];
+    m[2] = acc1[2];
+    m[3] = acc1[3];
+
+    a1 = _mm256_set1_epi32(s[4]);
+    a2 = _mm256_set1_epi32(s[5]);
+    a3 = _mm256_set1_epi32(s[6]);
+    a4 = _mm256_set1_epi32(s[7]);
+
+    __m256i acc2 = _mm256_mul_epi32(a1, b1) + _mm256_mul_epi32(a2, b2) + _mm256_mul_epi32(a3, b3) + _mm256_mul_epi32(a4, b4);
     acc2 = _mm256_srli_epi64(acc2, 12);
-    __m256i acc3 = s[8]*b1 + s[9]*b2 + s[10]*b3 + s[11]*b4;
+
+    m[4] = acc2[0];
+    m[5] = acc2[1];
+    m[6] = acc2[2];
+    m[7] = acc2[3];
+
+    a1 = _mm256_set1_epi32(s[8]);
+    a2 = _mm256_set1_epi32(s[9]);
+    a3 = _mm256_set1_epi32(s[10]);
+    a4 = _mm256_set1_epi32(s[11]);
+
+    __m256i acc3 = _mm256_mul_epi32(a1, b1) + _mm256_mul_epi32(a2, b2) + _mm256_mul_epi32(a3, b3) + _mm256_mul_epi32(a4, b4);
     acc3 = _mm256_srli_epi64(acc3, 12);
-    __m256i acc4 = s[12]*b1 + s[13]*b2 + s[14]*b3 + s[15]*b4;
+
+    m[8] = acc3[0];
+    m[9] = acc3[1];
+    m[10] = acc3[2];
+    m[11] = acc3[3];
+
+    a1 = _mm256_set1_epi32(s[12]);
+    a2 = _mm256_set1_epi32(s[13]);
+    a3 = _mm256_set1_epi32(s[14]);
+    a4 = _mm256_set1_epi32(s[15]);
+
+    __m256i acc4 = _mm256_mul_epi32(a1, b1) + _mm256_mul_epi32(a2, b2) + _mm256_mul_epi32(a3, b3) + _mm256_mul_epi32(a4, b4);
     acc4 = _mm256_srli_epi64(acc4, 12);
-    m[0] = acc1[3];
-    m[1] = acc1[2];
-    m[2] = acc1[1];
-    m[3] = acc1[0];
-
-    m[4] = acc2[3];
-    m[5] = acc2[2];
-    m[6] = acc2[1];
-    m[7] = acc2[0];
-
-    m[8] = acc3[3];
-    m[9] = acc3[2];
-    m[10] = acc3[1];
-    m[11] = acc3[0];
-
-    m[12] = acc4[3];
-    m[13] = acc4[2];
-    m[14] = acc4[1];
-    m[15] = acc4[0];
+    m[12] = acc4[0];
+    m[13] = acc4[1];
+    m[14] = acc4[2];
+    m[15] = acc4[3];
 }
 
 /*void MatrixMult4x3(s32* m, s32* s)
@@ -752,38 +778,65 @@ void MatrixMult4x4(s32* m, s32* s, s32* t)
 
 void MatrixMult4x3(s32* m, s32* s)
 {
-    __m256i b1{m[3], m[2], m[1], m[0]};
-    __m256i b2{m[7], m[6], m[5], m[4]};
-    __m256i b3{m[11], m[10], m[9], m[8]};
-    __m256i b4{m[15], m[14], m[13], m[12]};
+    __m256i b1 = _mm256_i32gather_epi32(m, _mm256_set_epi32(7*4, 3*4, 6*4, 2*4, 5*4, 1*4, 4*4, 0), 1);
+    __m256i b2 = _mm256_permutevar8x32_epi32(b1, _mm256_set_epi32(6, 7, 4, 5, 2, 3, 0, 1));
+    __m256i b3 = _mm256_i32gather_epi32(m + 8, _mm256_set_epi32(7*4, 3*4, 6*4, 2*4, 5*4, 1*4, 4*4, 0), 1);
+    __m256i b4 = _mm256_permutevar8x32_epi32(b3, _mm256_set_epi32(6, 7, 4, 5, 2, 3, 0, 1));
 
-    __m256i acc1 = s[0]*b1 + s[1]*b2 + s[2]*b3;
+    __m256i a1 = _mm256_set1_epi32(s[0]);
+    __m256i a2 = _mm256_set1_epi32(s[1]);
+    __m256i a3 = _mm256_set1_epi32(s[2]);
+
+    __m256i acc1 = _mm256_mul_epi32(a1, b1)
+                    + _mm256_mul_epi32(a2, b2)
+                    + _mm256_mul_epi32(a3, b3);
     acc1 = _mm256_srli_epi64(acc1, 12);
-    __m256i acc2 = s[3]*b1 + s[4]*b2 + s[5]*b3;
+
+    m[0] = acc1[0];
+    m[1] = acc1[1];
+    m[2] = acc1[2];
+    m[3] = acc1[3];
+
+    a1 = _mm256_set1_epi32(s[3]);
+    a2 = _mm256_set1_epi32(s[4]);
+    a3 = _mm256_set1_epi32(s[5]);
+
+    __m256i acc2 = _mm256_mul_epi32(a1, b1) + _mm256_mul_epi32(a2, b2) + _mm256_mul_epi32(a3, b3);
     acc2 = _mm256_srli_epi64(acc2, 12);
-    __m256i acc3 = s[6]*b1 + s[7]*b2 + s[8]*b3;
+
+    m[4] = acc2[0];
+    m[5] = acc2[1];
+    m[6] = acc2[2];
+    m[7] = acc2[3];
+
+    a1 = _mm256_set1_epi32(s[6]);
+    a2 = _mm256_set1_epi32(s[7]);
+    a3 = _mm256_set1_epi32(s[8]);
+
+    __m256i acc3 = _mm256_mul_epi32(a1, b1)
+                    + _mm256_mul_epi32(a2, b2)
+                    + _mm256_mul_epi32(a3, b3);
     acc3 = _mm256_srli_epi64(acc3, 12);
-    __m256i acc4 = s[9]*b1 + s[10]*b2 + s[11]*b3 + 0x1000*b4;
+
+    m[8] = acc3[0];
+    m[9] = acc3[1];
+    m[10] = acc3[2];
+    m[11] = acc3[3];
+
+    a1 = _mm256_set1_epi32(s[9]);
+    a2 = _mm256_set1_epi32(s[10]);
+    a3 = _mm256_set1_epi32(s[11]);
+    __m256i a4 = _mm256_set1_epi32(0x1000);
+
+    __m256i acc4 = _mm256_mul_epi32(a1, b1)
+                    + _mm256_mul_epi32(a2, b2)
+                    + _mm256_mul_epi32(a3, b3)
+                    + _mm256_mul_epi32(a4, b4);
     acc4 = _mm256_srli_epi64(acc4, 12);
-    m[0] = acc1[3];
-    m[1] = acc1[2];
-    m[2] = acc1[1];
-    m[3] = acc1[0];
-
-    m[4] = acc2[3];
-    m[5] = acc2[2];
-    m[6] = acc2[1];
-    m[7] = acc2[0];
-
-    m[8] = acc3[3];
-    m[9] = acc3[2];
-    m[10] = acc3[1];
-    m[11] = acc3[0];
-
-    m[12] = acc4[3];
-    m[13] = acc4[2];
-    m[14] = acc4[1];
-    m[15] = acc4[0];
+    m[12] = acc4[0];
+    m[13] = acc4[1];
+    m[14] = acc4[2];
+    m[15] = acc4[3];
 }
 
 /*void MatrixMult3x3(s32* m, s32* s)
@@ -810,33 +863,53 @@ void MatrixMult4x3(s32* m, s32* s)
 
 void MatrixMult3x3(s32* m, s32* s)
 {
-    __m256i b1{m[3], m[2], m[1], m[0]};
-    __m256i b2{m[7], m[6], m[5], m[4]};
-    __m256i b3{m[11], m[10], m[9], m[8]};
+    __m256i b1 = _mm256_i32gather_epi32(m, _mm256_set_epi32(7*4, 3*4, 6*4, 2*4, 5*4, 1*4, 4*4, 0), 1);
+    __m256i b2 = _mm256_permutevar8x32_epi32(b1, _mm256_set_epi32(6, 7, 4, 5, 2, 3, 0, 1));
+    __m256i b3 = _mm256_i32gather_epi32(m + 8, _mm256_set_epi32(7*4, 3*4, 6*4, 2*4, 5*4, 1*4, 4*4, 0), 1);
+    //__m256i b4 = _mm256_permutevar8x32_epi32(b3, _mm256_set_epi32(6, 7, 4, 5, 2, 3, 0, 1));
 
-    __m256i acc1 = s[0]*b1 + s[1]*b2 + s[2]*b3;
+    __m256i a1 = _mm256_set1_epi32(s[0]);
+    __m256i a2 = _mm256_set1_epi32(s[1]);
+    __m256i a3 = _mm256_set1_epi32(s[2]);
+
+    __m256i acc1 = _mm256_mul_epi32(a1, b1)
+                    + _mm256_mul_epi32(a2, b2)
+                    + _mm256_mul_epi32(a3, b3);
     acc1 = _mm256_srli_epi64(acc1, 12);
-    __m256i acc2 = s[3]*b1 + s[4]*b2 + s[5]*b3;
+
+    m[0] = acc1[0];
+    m[1] = acc1[1];
+    m[2] = acc1[2];
+    m[3] = acc1[3];
+
+    a1 = _mm256_set1_epi32(s[3]);
+    a2 = _mm256_set1_epi32(s[4]);
+    a3 = _mm256_set1_epi32(s[5]);
+
+    __m256i acc2 = _mm256_mul_epi32(a1, b1) + _mm256_mul_epi32(a2, b2) + _mm256_mul_epi32(a3, b3);
     acc2 = _mm256_srli_epi64(acc2, 12);
-    __m256i acc3 = s[6]*b1 + s[7]*b2 + s[8]*b3;
+
+    m[4] = acc2[0];
+    m[5] = acc2[1];
+    m[6] = acc2[2];
+    m[7] = acc2[3];
+
+    a1 = _mm256_set1_epi32(s[6]);
+    a2 = _mm256_set1_epi32(s[7]);
+    a3 = _mm256_set1_epi32(s[8]);
+
+    __m256i acc3 = _mm256_mul_epi32(a1, b1)
+                    + _mm256_mul_epi32(a2, b2)
+                    + _mm256_mul_epi32(a3, b3);
     acc3 = _mm256_srli_epi64(acc3, 12);
-    m[0] = acc1[3];
-    m[1] = acc1[2];
-    m[2] = acc1[1];
-    m[3] = acc1[0];
 
-    m[4] = acc2[3];
-    m[5] = acc2[2];
-    m[6] = acc2[1];
-    m[7] = acc2[0];
-
-    m[8] = acc3[3];
-    m[9] = acc3[2];
-    m[10] = acc3[1];
-    m[11] = acc3[0];
+    m[8] = acc3[0];
+    m[9] = acc3[1];
+    m[10] = acc3[2];
+    m[11] = acc3[3];
 }
 
-void MatrixScale(s32* m, s32* s)
+/*void MatrixScale(s32* m, s32* s)
 {
     m[0] = ((s64)s[0]*m[0]) >> 12;
     m[1] = ((s64)s[0]*m[1]) >> 12;
@@ -852,7 +925,7 @@ void MatrixScale(s32* m, s32* s)
     m[9] = ((s64)s[2]*m[9]) >> 12;
     m[10] = ((s64)s[2]*m[10]) >> 12;
     m[11] = ((s64)s[2]*m[11]) >> 12;
-}
+}*/
 
 /*void MatrixTranslate(s32* m, s32* s)
 {
@@ -862,33 +935,55 @@ void MatrixScale(s32* m, s32* s)
     m[15] += ((s64)s[0]*m[3] + (s64)s[1]*m[7] + (s64)s[2]*m[11]) >> 12;
 }*/
 
-/*void MatrixScale(s32* m, s32* s)
+void MatrixScale(s32* m, s32* s)
 {
-    __m128i b1 = _mm_load_si128((__m128i*)m);
-    __m128i b2 = _mm_load_si128((__m128i*)(m + 4));
-    __m128i b3 = _mm_load_si128((__m128i*)(m + 8));
-    b1 *= s[0];
-    b1 = _mm_srli_epi32(b1, 12);
-    b2 *= s[1];
-    b2 = _mm_srli_epi32(b2, 12);
-    b3 *= s[2];
-    b3 = _mm_srli_epi32(b3, 12);
+    __m256i a = _mm256_i32gather_epi32(m, _mm256_set_epi32(0, 3*4, 0, 2*4, 0, 1*4, 0, 0), 1);
+    __m256i b = _mm256_set1_epi32(s[0]);
+    a = _mm256_mul_epi32(a, b);
+    a = _mm256_srli_epi64(a, 12);
+    m[0] = a[0];
+    m[1] = a[1];
+    m[2] = a[2];
+    m[3] = a[3];
 
-    _mm_storeu_si128((__m128i*)(m), b1);
-    _mm_storeu_si128((__m128i*)(m + 4), b2);
-    _mm_storeu_si128((__m128i*)(m + 8), b3);
-}*/
+    a = _mm256_i32gather_epi32(m + 4, _mm256_set_epi32(0, 3*4, 0, 2*4, 0, 1*4, 0, 0), 1);
+    b = _mm256_set1_epi32(s[1]);
+    a = _mm256_mul_epi32(a, b);
+    a = _mm256_srli_epi64(a, 12);
+    m[4] = a[0];
+    m[5] = a[1];
+    m[6] = a[2];
+    m[7] = a[3];
+
+    a = _mm256_i32gather_epi32(m + 8, _mm256_set_epi32(0, 3*4, 0, 2*4, 0, 1*4, 0, 0), 1);
+    b = _mm256_set1_epi32(s[2]);
+    a = _mm256_mul_epi32(a, b);
+    a = _mm256_srli_epi64(a, 12);
+    m[8] = a[0];
+    m[9] = a[1];
+    m[10] = a[2];
+    m[11] = a[3];
+}
 
 void MatrixTranslate(s32* m, s32* s)
 {
-    __m128i b1 = _mm_load_si128((__m128i*)m);
-    __m128i b2 = _mm_load_si128((__m128i*)(m + 4));
-    __m128i b3 = _mm_load_si128((__m128i*)(m + 8));
+    __m256i a = _mm256_i32gather_epi32(m, _mm256_set_epi32(0, 3*4, 0, 2*4, 0, 1*4, 0, 0), 1);
+    __m256i b = _mm256_i32gather_epi32(m + 4, _mm256_set_epi32(0, 3*4, 0, 2*4, 0, 1*4, 0, 0), 1);
+    __m256i c = _mm256_i32gather_epi32(m + 8, _mm256_set_epi32(0, 3*4, 0, 2*4, 0, 1*4, 0, 0), 1);
+    __m256i d = {m[12], m[13], m[14], m[15]};
 
-    __m128i acc1 = s[0]*b1 + s[1]*b2 + s[2]*b3;
-    acc1 = _mm_srli_epi32(acc1, 12);
-
-    _mm_store_si128((__m128i*)(m+12), acc1);
+    __m256i s0 = _mm256_set1_epi32(s[0]);
+    __m256i s1 = _mm256_set1_epi32(s[1]);
+    __m256i s2 = _mm256_set1_epi32(s[2]);
+    __m256i acc = _mm256_mul_epi32(s0, a)
+                    + _mm256_mul_epi32(s1, b)
+                    + _mm256_mul_epi32(s2, c);
+    acc = _mm256_srli_epi64(acc, 12);
+    acc = _mm256_add_epi64(acc, d);
+    m[12] = acc[0];
+    m[13] = acc[1];
+    m[14] = acc[2];
+    m[15] = acc[3];
 }
 
 void UpdateClipMatrix()
